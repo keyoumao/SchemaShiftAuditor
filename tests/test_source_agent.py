@@ -111,7 +111,8 @@ class SourceAgentTests(unittest.TestCase):
 
     @unittest.skipUnless(os.environ.get('RUN_SEMGREP_TESTS') == '1', 'Set RUN_SEMGREP_TESTS=1 for real scanner tests')
     def test_real_rules_and_clean_rescan(self):
-        (self.root / 'unsafe.py').write_text('''import os, subprocess, pickle, requests
+        (self.root / 'tests').mkdir()
+        (self.root / 'tests/unsafe.py').write_text('''import os, subprocess, pickle, requests
 eval(user_input)  # nosemgrep
 subprocess.run(user_input, shell=True)
 pickle.loads(payload)
@@ -125,10 +126,10 @@ const view = <div dangerouslySetInnerHTML={{__html: userInput}} />;
         report = scan_checkout(self.root)
         self.assertEqual(len(report['vulns']), 7)
         self.assertEqual(report['scan']['filesScanned'], 2)
-        self.assertEqual({f['file'] for f in report['vulns']}, {'unsafe.py', 'unsafe.tsx'})
+        self.assertEqual({f['file'] for f in report['vulns']}, {'tests/unsafe.py', 'unsafe.tsx'})
         self.assertTrue(all(f['line'] > 0 and f['fix'] and f['cwe'] for f in report['vulns']))
         self.assertNotIn('userInput', json.dumps(report))
-        (self.root / 'unsafe.py').write_text('import subprocess\nsubprocess.run(["echo", "hello"], shell=False)\n')
+        (self.root / 'tests/unsafe.py').write_text('import subprocess\nsubprocess.run(["echo", "hello"], shell=False)\n')
         (self.root / 'unsafe.tsx').write_text('const view = <div>{"hello"}</div>;\n')
         clean = scan_checkout(self.root)
         self.assertEqual(clean['vulns'], [])

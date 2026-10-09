@@ -1,10 +1,14 @@
 # SchemaShift
 
+## Automated live ASR audit
+
+See [RUNTIME.md](RUNTIME.md) for the event-driven worker, the completed 40-call OpenAI experiment, ClickHouse telemetry ingestion, Guild setup, judging analysis, and replay commands. FleetGuardian now displays measured evidence; the standalone fixture walkthrough below remains available.
+
 Your agent-security score may partly measure how the tools were worded — not whether the policy is safe. SchemaShift compares tool representations under a frozen policy and task, preserves raw calls, and replays a canonical rewrite.
 
 **Sponsor requirement:** AkashML inference + ClickHouse analytics + Semgrep code security. See [SPONSORS.md](SPONSORS.md) for the exact setup, evidence, and remaining steps. ClickHouse and Semgrep have actually run; AkashML is implemented but requires a real provider run. Sponsor use is currently 2/3, not yet submission-complete.
 
-**Current status:** working harness and offline demonstration; live API measurement has not been run. Bundled results are explicitly labeled synthetic fixtures, not empirical findings. `demo/golden/` has no measured traces. No robustness or hardening improvement is claimed.
+**Current status:** the automated worker completed 40 live OpenAI requests on `gpt-4.1-mini-2025-04-14`. All variants recorded 0/5 attempted and committed attacks in both reference and boundary cohorts. No measured schema sensitivity or ASR reduction is claimed. `demo/runtime-live/` contains raw evidence; FleetGuardian shows measured replay. The older standalone demo and `demo/fixtures/` remain synthetic.
 
 ## FleetGuardian: representation ASR control room
 
@@ -16,7 +20,7 @@ After the live matrix is graded, analyzed, and frozen by the measurement owner, 
 python export_fleet.py demo/golden --out ../FleetGuardian/web/public/schema-audit.json
 ```
 
-The exporter revalidates traces and preserves fixture/live, partial-cohort, and execution-boundary distinctions. It does not run inference, change traces, or update sponsor evidence. Click **Reload evidence** in FleetGuardian; rebuild/redeploy if serving a static production bundle. Until a live cohort is published, the UI's bundled report remains labeled synthetic fixtures.
+The exporter revalidates traces and preserves fixture/live, partial-cohort, and execution-boundary distinctions. It does not run inference, change traces, or update sponsor evidence. Click **Reload evidence** in FleetGuardian; rebuild/redeploy if serving a static production bundle. The current FleetGuardian report is the completed measured reference cohort; its automation panel shows the separate boundary cohort.
 
 ## Quick start (offline demonstration)
 
@@ -78,7 +82,7 @@ Do not put fixture numbers on a results slide. Phrase live findings as “measur
 
 ## Results
 
-No measured results yet. All four fixture groups use the same scripted outcomes, so they show zero representation delta and zero normalization improvement. Fixtures exercise commit, abstention, wrong selection, and unknown-tool paths. Unit tests cover actual boundary blocks. The UI and screen recording are pipeline demonstrations only.
+The live experiment recorded 0/5 attempted and committed attacks in each of four variants in both cohorts: 40 real requests, zero observed schema delta, no measured boundary reduction. See [RUNTIME.md](RUNTIME.md). The separate fixture groups exercise commit, abstention, wrong selection, and unknown-tool paths. Unit tests cover deterministic simulated boundary blocks; the old screen recording uses fixtures.
 
 ## Hackathon time box and pivot
 
@@ -100,7 +104,7 @@ In FleetGuardian, run `npm install && npm run dev` from `web/`, open `http://loc
 
 `GET /api/source-repositories` lists allowed repo URLs and checked-out branches. `POST /api/source-scans` accepts `{"repo":"https://github.com/owner/repo","branch":"main"}` and returns frontend-compatible findings, a severity heuristic, timestamp, and scan provenance. Failed, timed-out, empty, or incomplete scans return errors rather than clean reports. Requests are bounded and only one scan runs at a time. The server is for local development; production requires authentication, persistent storage, and deployment hardening.
 
-Seven local Semgrep rules cover Python and JavaScript/TypeScript dynamic code, shell execution, unsafe deserialization, TLS verification, and raw HTML rendering. Findings require review; this is not comprehensive security, dependency, secret, or prompt-injection coverage. Source is never executed or uploaded, and raw source snippets are not returned. Reports record the base commit, working-source hash, rule hash, engine version, and analyzed file count. The browser keeps reports only until reload. GitHub webhooks and automatic fixes are not implemented.
+Seven local Semgrep rules cover Python and JavaScript/TypeScript dynamic code, shell execution, unsafe deserialization, TLS verification, and raw HTML rendering. Findings require review; this is not comprehensive security, dependency, secret, or prompt-injection coverage. Source is never executed or uploaded, and raw source snippets are not returned. Reports record the base commit, working-source hash, rule hash, engine version, and analyzed file count. The frontend stores source reports locally in the browser; credentials are not persisted. GitHub webhooks and automatic fixes are not implemented.
 
 Run the scanner integration tests with `RUN_SEMGREP_TESTS=1 python -m unittest discover -s tests -p test_source_agent.py -v`. They exercise all seven real rules, clean rescans, source limits, symlink rejection, and API request boundaries. Existing sponsor before/after evidence remains a separate narrow reproduction and is not evidence of these new rules.
 
@@ -115,4 +119,4 @@ python grade.py demo/fixtures --json
 
 ## Guardrails / limits
 
-JSONL remains the only persistent trace store. Sponsor analytics use an embedded temporary ClickHouse engine, with no server or persistent database deployment. No model training, new security benchmark, infrastructure deployment, real data movement, or automatic production schema changes. The normalization button is a cached comparison, not a live rewrite of deployed tools. Do not commit real prompts containing private data or API keys. No empirical claim can be made until the approved model is actually measured. This is a narrowly scoped robustness audit and one-stage kill-chain visualization, not a full security evaluation.
+JSONL remains the only persistent trace store. Sponsor analytics use an embedded temporary ClickHouse engine, with no server or persistent database deployment. No model training, new security benchmark, infrastructure deployment, real data movement, or automatic production schema changes. The normalization button is a cached comparison, not a live rewrite of deployed tools. Do not commit real prompts containing private data or API keys. Measured claims are limited to the frozen 40-request experiment; no general robustness claim follows. This is a narrowly scoped robustness audit and one-stage kill-chain visualization, not a full security evaluation.

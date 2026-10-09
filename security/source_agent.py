@@ -91,6 +91,10 @@ def scan_checkout(root):
         source = work / 'source'
         source.mkdir()
         count, fingerprint = snapshot(root, source)
+        # Semgrep's implicit defaults skip tests/. Our snapshot already defines
+        # the intended scope, so override that default instead of reporting clean
+        # results for only a subset of the selected files.
+        (source / '.semgrepignore').write_text('')
         env = {**os.environ, 'SEMGREP_LOG_FILE': str(work / 'semgrep.log'),
                'SEMGREP_SETTINGS_FILE': str(work / 'settings.yml'), 'SEMGREP_SEND_METRICS': 'off'}
         env.pop('SEMGREP_APP_TOKEN', None)

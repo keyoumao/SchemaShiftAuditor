@@ -9,6 +9,28 @@ from datetime import datetime, timezone
 from pathlib import Path
 from core import *
 
+def collect_trial(client, schema, model, trials, trial, enforce_boundary, out, provider="openai", seed=None):
+    """One request, no retries or fallback; validate before storing simulated outcome."""
+    cfg=configuration(schema,model,seed,trials,enforce_boundary,provider)
+    started=datetime.now(timezone.utc).isoformat()
+    kwargs={'model':model,'temperature':0,'messages':[{'role':'system','content':POLICY},{'role':'user','content':PROMPT}], 'tools':[{'type':'function','function':t['function']} for t in schema['tools']], 'tool_choice':'auto','parallel_tool_calls':False,'max_completion_tokens':400}
+    if seed is not None: kwargs['seed']=seed
+    # Never retry by changing temperature/seed/model. API failures are not graded successes.
+    response=client.chat.completions.create(**kwargs)
+    if len(response.choices)!=1 or response.choices[0].finish_reason not in ['stop','tool_calls']:
+        raise ValueError('Incomplete/filtered model response; not graded')
+    message=response.choices[0].message
+    raw=[]
+    for call in message.tool_calls or []:
+        try: args=json.loads(call.function.arguments)
+        except json.JSONDecodeError: args=call.function.arguments
+        raw.append((call.function.name,args))
+    calls=execute(raw,schema,enforce_boundary,datetime.now(timezone.utc).isoformat())
+    trace=Trace(run_id=str(uuid.uuid4()),variant=schema['name'],trial=trial,trial_count=trials,model=model,temperature=0,seed=seed,config_hash=digest(cfg),started_at=started,source='live',provider=provider,response_model=getattr(response,'model',model),config=cfg,response_text=message.content or '',system_fingerprint=getattr(response,'system_fingerprint',None),tool_calls=calls,grader=grade(calls))
+    validate_trace(trace.model_dump())
+    write_trace(out,trace)
+    return trace
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--variant',choices=['baseline','neutralized','threat_loaded','normalized','all'],default='baseline')
@@ -44,23 +66,7 @@ def main():
     for n,schema in schemas.items():
         cfg=configuration(schema,a.model,a.seed,a.trials,a.enforce_boundary,a.provider)
         for trial in range(1,a.trials+1):
-            started=datetime.now(timezone.utc).isoformat()
-            kwargs={'model':a.model,'temperature':0,'messages':[{'role':'system','content':POLICY},{'role':'user','content':PROMPT}], 'tools':[{'type':'function','function':t['function']} for t in schema['tools']], 'tool_choice':'auto','parallel_tool_calls':False,'max_completion_tokens':400}
-            if a.seed is not None: kwargs['seed']=a.seed
-            # Never retry by changing temperature/seed/model. API failures are not graded successes.
-            response=client.chat.completions.create(**kwargs)
-            if len(response.choices)!=1 or response.choices[0].finish_reason not in ['stop','tool_calls']:
-                raise ValueError('Incomplete/filtered model response; not graded')
-            message=response.choices[0].message
-            raw=[]
-            for call in message.tool_calls or []:
-                try: args=json.loads(call.function.arguments)
-                except json.JSONDecodeError: args=call.function.arguments
-                raw.append((call.function.name,args))
-            calls=execute(raw,schema,a.enforce_boundary,datetime.now(timezone.utc).isoformat())
-            trace=Trace(run_id=str(uuid.uuid4()),variant=n,trial=trial,trial_count=a.trials,model=a.model,temperature=0,seed=a.seed,config_hash=digest(cfg),started_at=started,source='live',provider=a.provider,response_model=getattr(response,'model',a.model),config=cfg,response_text=message.content or '',system_fingerprint=getattr(response,'system_fingerprint',None),tool_calls=calls,grader=grade(calls))
-            validate_trace(trace.model_dump())
-            write_trace(a.out,trace)
+            trace=collect_trial(client,schema,a.model,a.trials,trial,a.enforce_boundary,a.out,a.provider,a.seed)
             print(f'{n} {trial}/{a.trials}: saved {trace.run_id}')
 if __name__=='__main__':
     try: main()

@@ -1,0 +1,11 @@
+{
+  "status": "configured",
+  "private": true,
+  "reviewed": false,
+  "role": "Advisory evidence review; cannot authorize actions or change measured scores",
+  "agentId": "01a122db-7e98-726e-0000-31db4b5381e2",
+  "versionId": "01a122dd-a5d4-cf83-0000-acaefc8a09de",
+  "workspaceId": "01a122dd-a678-3bb9-0000-32079a455a08",
+  "installationId": "01a122df-4cc8-22ef-0000-3620cbd885ac",
+  "note": "Private configuration verified; no Guild inference/session run and no ASR evidence generated."
+}
