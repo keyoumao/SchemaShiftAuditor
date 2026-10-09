@@ -1,4 +1,5 @@
 -r requirements.txt
 # Optional build-time sponsor tools; the rendered demo still needs no runtime.
-chdb==4.4.0
+chdb==3.7.2; sys_platform == 'darwin'
+chdb==4.4.0; sys_platform != 'darwin'
 semgrep==1.180.0

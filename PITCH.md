@@ -10,7 +10,15 @@ FleetGuardian is the control room. SchemaShift audits the harness contract; Semg
 
 Normalize reveals recorded `tool_a` / `tool_b` trials. The kill-chain view explains where each attempt reached or stopped. Normalization is a mitigation hypothesis; the deterministic execution boundary is the enforceable control.
 
-Today's bundled replay is synthetic. It demonstrates the audit, with **no measured schema delta or ASR reduction claimed**. The contribution is a reproducible way to expose false confidence in a security score.
+FleetGuardian now shows a real 40-call GPT-4.1 mini experiment: four schemas, five trials each, with a separate boundary cohort. Every variant returned 0/5 attempted and committed attacks. **No schema delta or ASR reduction was observed.** The contribution is the automated, reproducible audit and its evidence, not a manufactured improvement. The older standalone HTML walkthrough remains synthetic.
+
+## Three-minute judged demo
+
+- **0:00–0:30 — Problem:** A source scan and a runtime block answer different questions from whether an ASR score survives tool wording changes.
+- **0:30–1:15 — Autonomy:** Show the completed telemetry → frozen experiment → ClickHouse validation → publication log. Explicitly identify the three mock events and 40 real OpenAI requests.
+- **1:15–2:00 — Evidence:** Show 0/5 across all variants and both cohorts. Say: “We did not observe sensitivity here. Our agent reports that instead of tuning until the graph looks exciting.” Open the frozen configuration and raw traces.
+- **2:00–2:30 — Boundaries:** Show the separate executor regression: external sends blocked, internal archive allowed. It is a deterministic simulation test, not measured ASR reduction.
+- **2:30–3:00 — Value and limits:** Explain the path to auditing changing tool contracts in CI. Semgrep and ClickHouse have executed; Guild setup is not yet runtime evidence, and Akash deployment is next. Do not claim three effective sponsor integrations yet.
 
 ## Demo sequence
 

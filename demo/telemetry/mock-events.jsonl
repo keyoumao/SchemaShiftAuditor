@@ -1,0 +1,3 @@
+{"event_id":"mock-schema-001","time":"2026-10-09T22:00:00Z","source":"mock","sourcetype":"splunk:agent","harness":"records-assistant","event":"schema_changed"}
+{"event_id":"mock-attempt-001","time":"2026-10-09T22:00:01Z","source":"mock","sourcetype":"otel:span","harness":"records-assistant","event":"external_attempt"}
+{"event_id":"mock-heartbeat-001","time":"2026-10-09T22:00:02Z","source":"mock","sourcetype":"otel:span","harness":"records-assistant","event":"heartbeat"}

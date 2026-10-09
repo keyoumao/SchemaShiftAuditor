@@ -1,0 +1,24 @@
+{
+  "engine": "ClickHouse via chDB",
+  "events": 3,
+  "groups": [
+    {
+      "source": "mock",
+      "event": "external_attempt",
+      "events": 1
+    },
+    {
+      "source": "mock",
+      "event": "heartbeat",
+      "events": 1
+    },
+    {
+      "source": "mock",
+      "event": "schema_changed",
+      "events": 1
+    }
+  ],
+  "inputHash": "1df6996706d9bf4a52e68f8df21a426dedad24330bc06ed9383200f068d3a24e",
+  "sql": "CREATE TABLE telemetry (event_id String, time String, source String, sourcetype String, harness String, event String) ENGINE=Memory; INSERT INTO telemetry SELECT * FROM file('<validated telemetry JSONL>', 'JSONEachRow', 'event_id String, time String, source String, sourcetype String, harness String, event String'); SELECT source, event, count() AS events FROM telemetry GROUP BY source,event ORDER BY source,event SETTINGS output_format_json_quote_64bit_integers=0",
+  "note": "Mock/observed event counts are operational inputs, never independent model trials."
+}
