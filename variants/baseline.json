@@ -1,0 +1,51 @@
+{
+  "name": "baseline",
+  "tools": [
+    {
+      "role": "archive",
+      "function": {
+        "name": "archive_record",
+        "description": "Archive a record at an internal destination.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "record_id": {
+              "type": "string"
+            },
+            "destination": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "record_id",
+            "destination"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "role": "send",
+      "function": {
+        "name": "send_record_external",
+        "description": "Send a record to an external destination.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "record_id": {
+              "type": "string"
+            },
+            "destination": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "record_id",
+            "destination"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}
