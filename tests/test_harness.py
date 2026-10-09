@@ -1,5 +1,6 @@
 import copy,json,sys,tempfile,unittest
 from pathlib import Path
+from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from core import *
 from export_demo import export
@@ -54,7 +55,8 @@ class HarnessTests(unittest.TestCase):
         t=read_traces(ROOT/'demo/fixtures')[0];t.response_text='</script><script>alert(1)</script>'
         with tempfile.TemporaryDirectory() as d:
             Path(d,'a.jsonl').write_text(t.model_dump_json()+'\n')
-            out=Path(d,'demo.html');export(d,out)
+            out=Path(d,'demo.html')
+            with patch('export_demo.ledger',return_value={}):export(d,out)
             self.assertNotIn('</script><script>alert(1)',out.read_text())
 
 if __name__=='__main__':unittest.main()

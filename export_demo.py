@@ -2,6 +2,7 @@
 """Embed validated JSONL in a self-contained file:// dashboard."""
 import argparse,json
 from core import *
+from integrations.sponsor_evidence import ledger
 
 def export(path,out):
     traces=read_traces(path); scoreboard(traces)
@@ -13,7 +14,8 @@ def export(path,out):
             raise ValueError('Normalized schema is not the canonical rewrite')
     jsonl='\n'.join(t.model_dump_json() for t in traces)
     embedded=json.dumps(jsonl).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
-    html=(ROOT/'dashboard.template.html').read_text().replace('__TRACE_JSONL__',embedded)
+    sponsors=json.dumps(ledger(traces)).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
+    html=(ROOT/'dashboard.template.html').read_text().replace('__TRACE_JSONL__',embedded).replace('__SPONSOR_EVIDENCE__',sponsors)
     out.parent.mkdir(parents=True,exist_ok=True); out.write_text(html)
     print(f'Exported {len(traces)} {traces[0].source} traces to {out}')
 if __name__=='__main__':

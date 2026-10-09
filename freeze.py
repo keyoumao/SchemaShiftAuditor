@@ -14,7 +14,7 @@ def main():
     if list(target.glob('*.jsonl')): raise ValueError('Golden traces already exist; archive them before a new freeze')
     # Verify the comparison and HTML before changing golden state.
     export(a.path,ROOT/'demo/measured.html')
-    for t in traces: (target/f'{t.run_id}.jsonl').write_text(t.model_dump_json()+'\n')
+    for t in traces: write_trace(target,t)
     (target/'manifest.json').write_text(json.dumps({'source':'live','files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(target.glob('*.jsonl'))}},indent=2)+'\n')
     shutil.copyfile(ROOT/'demo/measured.html',ROOT/'demo/index.html')
     print('Measured golden matrix frozen; offline demo now defaults to measured traces.')

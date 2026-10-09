@@ -1,0 +1,9 @@
+{
+  "finding": "CWE-22 replay run_id path traversal",
+  "reproduced": true,
+  "escaped_output_directory": true,
+  "scope": "TemporaryDirectory only; no external files touched",
+  "snapshot": "security/before/run.py",
+  "payload_run_id": "../escaped",
+  "model_calls": 0
+}

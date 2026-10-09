@@ -1,6 +1,7 @@
 """Frozen task, schema equivalence, simulated execution, and trace validation."""
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
@@ -28,7 +29,7 @@ class Grader(Strict):
     abstained: bool
     notes: str
 class Trace(Strict):
-    run_id: str
+    run_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
     variant: str
     trial: int = Field(ge=1)
     trial_count: int = Field(ge=1)
@@ -38,11 +39,31 @@ class Trace(Strict):
     config_hash: str
     started_at: str
     source: Literal['live','fixture']
+    provider: Literal['openai','akash','fixture'] = 'openai'
+    response_model: str | None = None
     config: dict
     response_text: str
     system_fingerprint: str | None
     tool_calls: list[ToolCall]
     grader: Grader
+
+
+def safe_trace_path(directory, run_id):
+    """Permit one bounded filename; reject traversal, absolute paths, and symlinks."""
+    if not isinstance(run_id,str) or re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,127}',run_id) is None:
+        raise ValueError('Unsafe run ID')
+    base=Path(directory).resolve()
+    target=base/(run_id+'.jsonl')
+    if target.is_symlink() or target.resolve().parent != base:
+        raise ValueError('Trace path escapes output directory')
+    return target
+
+def write_trace(directory, trace):
+    target=safe_trace_path(directory,trace.run_id)
+    # Exclusive create also refuses symlink races / overwriting cached evidence.
+    with target.open('x',encoding='utf-8') as output:
+        output.write(trace.model_dump_json()+'\n')
+    return target
 
 def digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
@@ -68,8 +89,8 @@ def assert_equivalent(schemas):
         if {t['role']:t['function']['parameters'] for t in schema['tools']} != expected:
             raise ValueError('Schema parameters/types/required fields differ')
 
-def configuration(schema,model,seed,trials,enforce):
-    return {'schema':schema,'policy':POLICY,'prompt':PROMPT,'model':model,'temperature':0,'seed':seed,'trial_count':trials,'enforce_boundary':enforce,'executor_version':1,'grader_version':1,'max_completion_tokens':400,'tool_choice':'auto','parallel_tool_calls':False,'turn_limit':1}
+def configuration(schema,model,seed,trials,enforce,provider="openai"):
+    return {'provider':provider,'schema':schema,'policy':POLICY,'prompt':PROMPT,'model':model,'temperature':0,'seed':seed,'trial_count':trials,'enforce_boundary':enforce,'executor_version':1,'grader_version':1,'max_completion_tokens':400,'tool_choice':'auto','parallel_tool_calls':False,'turn_limit':1}
 
 def execute(raw_calls,schema,enforce,ts):
     mapping = {t['function']['name']:t['role'] for t in schema['tools']}
@@ -99,6 +120,10 @@ def validate_trace(data):
         raise ValueError('Config hash mismatch')
     cfg=t.config
     assert_equivalent([cfg['schema']])
+    if cfg.get('provider','openai')!=t.provider:
+        raise ValueError('Trace provider differs from config')
+    if cfg['policy']!=POLICY or cfg['prompt']!=PROMPT:
+        raise ValueError('Task/policy differs from frozen experiment')
     if any(getattr(t,k)!=cfg[k] for k in ['model','temperature','seed','trial_count']):
         raise ValueError('Trace metadata differs from config')
     if t.trial > t.trial_count or cfg['schema']['name']!=t.variant:
@@ -128,6 +153,8 @@ def scoreboard(traces):
         c=dict(t.config); c.pop('schema')
         signatures.add((t.source,digest(c)))
     if len(signatures)!=1: raise ValueError('Mixed sources or task/model/execution configs; grade separately')
+    if len({t.response_model for t in traces})>1:
+        raise ValueError('Backend response models differ; grade separately')
     groups={}
     for t in traces: groups.setdefault(t.variant,[]).append(t)
     rows=[]

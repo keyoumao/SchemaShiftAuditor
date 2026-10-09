@@ -1,0 +1,31 @@
+{
+  "tool": "Semgrep CE",
+  "status": "executed",
+  "version": "1.180.0",
+  "before_matches": 2,
+  "after_matches": 0,
+  "confirmed_vulnerabilities": 1,
+  "finding": "CWE-22 replay output path traversal",
+  "triage": "Two matches, one confirmed cache replay vulnerability; live write used a generated UUID. A custom project rule, not a comprehensive security audit.",
+  "production_hashes": {
+    "core.py": "113edc6b52dd9c66c8f91d9a19f17a9705274ac558458fbe0914992b916dfaff",
+    "export_demo.py": "be3616bfc086061cbfba9e798ee3f74f8613e3ede98c3be4164899081f360b4a",
+    "freeze.py": "b8f91607e5ebcbd59be3e89ca9b5e139b1df4658a27a25f38d7d4458452a8861",
+    "integrations/clickhouse_audit.py": "d19fe8321e2a17abab649b1585ea5b76a7f0ac2ab3c2c465d4a86c4852cd44de",
+    "integrations/sponsor_evidence.py": "66f19128cd5c04de2d6fb8b3291953487883f9a926517dd1e93069e01ef8f1ee",
+    "providers.py": "7ca940363cc245a0386572948042f9febf564d54c1dca543580f10d32722e4d9",
+    "run.py": "967979ac5d589676fcc45b67588ff7e9995de7388b3767cefe6782bc998abcba",
+    "security/scan.py": "9029ad1f24b54ae72d7c8bb77c2aacd6b9687069c5050c56db3a4e08669510ad"
+  },
+  "before_snapshot_hash": "e8b44dd78d5af99c67c1ceaf93fd2f0c4cd7a6575b6bce17f2cf5bc084048e2d",
+  "rule_hash": "d641bade41e8b5fcdae7964c3f2d539fbb974445f4377b1a0c64c3f0b76a59ed",
+  "reproduction": {
+    "finding": "CWE-22 replay run_id path traversal",
+    "reproduced": true,
+    "escaped_output_directory": true,
+    "scope": "TemporaryDirectory only; no external files touched",
+    "snapshot": "security/before/run.py",
+    "payload_run_id": "../escaped",
+    "model_calls": 0
+  }
+}

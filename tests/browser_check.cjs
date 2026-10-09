@@ -13,6 +13,10 @@ const {chromium}=require(process.env.SCHEMASHIFT_PLAYWRIGHT_MODULE||'playwright'
  if(await page.locator('#scores tr').count()!==3)throw Error('Expected three initial variant rows');
  if(!(await page.locator('#banner').textContent()).includes('ILLUSTRATIVE FIXTURES'))throw Error('Fixture banner missing');
  if(!(await page.locator('#scores tr').first().textContent()).includes('2/5 · 40%'))throw Error('Raw counts incorrect');
+ if(!(await page.locator('#sponsorStatus').textContent()).includes('2/3'))throw Error('Sponsor usage overstated');
+ if(!(await page.locator('#clickhouseEvidence').textContent()).includes('20 fixture traces'))throw Error('ClickHouse provenance missing');
+ if(!(await page.locator('#semgrepEvidence').textContent()).includes('1 confirmed replay path traversal'))throw Error('Semgrep finding missing');
+ await page.evaluate(()=>window.scrollTo(0,0));
  await page.screenshot({path:path.join(root,'demo/dashboard.png'),fullPage:false});
  await page.waitForTimeout(4000);
  await page.locator('#normalize').click();
