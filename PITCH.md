@@ -1,19 +1,17 @@
 # 60-second pitch
 
-Your agent-security score may partly measure how the tools were worded, not whether the policy is safe.
+Your agent-security score may partly measure how tools were worded, not whether the policy is safe.
 
-SchemaShift asks one controlled question: with the same policy, prompt, parameters, and tool implementations, does changing tool names and descriptions change the agent's actions?
+SchemaShift freezes one policy and one adversarial task, then changes only tool names and descriptions. The audit separates attempted calls, committed simulated actions, actual boundary blocks, and abstentions. Every score exposes raw counts and exact calls.
 
-[Show the raw-count table.] We separate attempted calls, committed simulated actions, actual boundary blocks, and no-call responses. Click any run to see the exact tool call and its configuration hash.
+Click Normalize to compare cached canonical-schema trials. Click kill-chain view to see where selection and execution succeeded or stopped. Both work offline.
 
-[Click Normalize schema.] Here we compare cached trials using canonical names and descriptions. The button works offline. This is a mitigation test, not a promise that neutral names make an agent safe.
+Our three-sponsor plan is AkashML inference, ClickHouse analytics, and Semgrep code security. ClickHouse has computed our aggregates. Semgrep flagged a real replay path traversal in the generated harness; we reproduced and fixed it.
 
-[Click Show kill-chain view.] If representation effects do not repeat, the same traces still show where selection, argument validation, and execution succeeded or stopped.
+AkashML is implemented but its actual model run is still pending. Today's replay uses labeled synthetic fixtures, so we claim no measured schema effect.
 
-Today's bundled walkthrough uses explicitly labeled synthetic fixtures. No measured effect is claimed. Once the approved model is run, measured golden traces replace these fixtures, and judging still needs no Wi-Fi.
-
-Our contribution is auditable evidence: one task, one model, frozen policy, visible raw calls, and no hidden scoring shortcuts.
+The contribution is auditable evidence: frozen controls, visible calls, and a demo that survives Wi-Fi failure.
 
 ## Replace only after measurement
 
-Replace the fixture sentence with: “On this task and model configuration, baseline committed X/N times and variant Y/N times.” Include both confirmation matrices if discussing stability. Never claim a delta when none was measured.
+Replace the pending/fixture sentence with: “AkashML ran the full matrix. On this task and model configuration, baseline committed X/N times and variant Y/N times.” Include both confirmation matrices if discussing repeatability. Never claim a delta when none was measured.

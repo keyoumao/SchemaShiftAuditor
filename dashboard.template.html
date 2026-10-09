@@ -7,11 +7,13 @@
 <main><header><div><div class="eyebrow">AGENT SECURITY / ROBUSTNESS AUDITOR</div><h1>SchemaShift</h1><p>How much of your security score comes from the tool wording?</p></div><div class="pill">OFFLINE REPLAY</div></header>
 <div id="banner" class="banner"></div>
 <div class="actions"><button id="normalize">Normalize schema</button><button id="mode" class="secondary">Show kill-chain view</button></div><p class="small">Frozen task · frozen policy · equivalent parameter contracts · simulated tools only</p>
+<section class="card"><h2>Sponsor use & evidence</h2><p id="sponsorStatus"></p><div class="grid"><div><h3>AkashML · inference</h3><p id="akashEvidence"></p><h3>ClickHouse · analytics</h3><p id="clickhouseEvidence"></p></div><div><h3>Semgrep · code security</h3><p id="semgrepEvidence"></p><details><summary>Evidence, SQL timing, and limits</summary><pre id="sponsorDetails"></pre></details></div></div><p class="small">A sponsor adapter or mock is not proof of real use. The offline page replays captured sponsor evidence; it never calls services.</p></section>
 <section class="card wide"><h2>Representation audit</h2><table><thead><tr><th>Variant</th><th>Trials</th><th>Committed ASR</th><th>Attempted ASR</th><th>Task success</th><th>Blocked</th><th>Selection error</th><th>Abstained</th><th>Δ baseline</th></tr></thead><tbody id="scores"></tbody></table><p class="small">All fractions show raw counts. Task success = attacker objective = committed action. Flags may overlap. No-call responses are abstentions, not confirmed refusals.</p></section>
 <div class="grid"><section class="card"><h2>Committed attack success rate</h2><div id="bars"></div><p class="small">Descriptive results for this task and configuration only. Temperature 0 and a seed do not guarantee deterministic sampling. Five trials cannot establish statistical stability.</p></section><section class="card"><h2>Config & invariants</h2><pre id="config"></pre><details><summary>Exact policy and adversarial task</summary><pre id="task"></pre></details><p class="small">Only names and descriptions change. Tool roles, order, types, required fields, executor, grader, and prompt stay fixed. Export validates hashes and regrades calls.</p></section></div>
 <section id="hardening" class="card hidden"><h2>Cached normalization comparison</h2><p id="beforeafter" class="result"></p><pre id="tokens"></pre><p class="small">This button selects already-recorded normalized trials. It never calls a model or predicts an improvement. Canonical names remove framing but are not a security boundary.</p></section>
 <section class="card"><h2 id="traceTitle">Per-run trace viewer</h2><div id="traces"></div></section>
 <p class="small">Threat discovery + continuous defense · no database · no network · no real records · one-step tool-selection audit</p></main>
+<script id="sponsor-data" type="application/json">__SPONSOR_EVIDENCE__</script>
 <script id="trace-data" type="application/json">__TRACE_JSONL__</script>
 <script>
 'use strict';
@@ -24,10 +26,18 @@ const rate=(v,key)=>count(v,key)/groups[v].length;
 const cell=(tr,text)=>{let td=document.createElement('td');td.textContent=text;tr.append(td)};
 const fraction=(v,key)=>`${count(v,key)}/${groups[v].length} · ${(100*rate(v,key)).toFixed(0)}%`;
 const first=traces[0];
+const sponsors=JSON.parse($('sponsor-data').textContent);
+$('sponsorStatus').textContent=`${sponsors.executed_sponsor_count}/3 sponsor tools actually executed. ${sponsors.executed_sponsor_count<3?'Three-tool submission requirement remains incomplete.':'Actual use recorded; eligibility remains subject to organizer rules.'}`;
+$('akashEvidence').textContent=sponsors.akash.status==='executed'?`${sponsors.akash.measured_trials} measured trials · ${sponsors.akash.model}`:sponsors.akash.message;
+const analytics=sponsors.clickhouse;
+$('clickhouseEvidence').textContent=analytics.status==='executed'?`ClickHouse ${analytics.engine_version} via chDB · ${analytics.trace_count} ${analytics.source} traces · raw SQL counts verified. Local cold query: ${analytics.cold_query_ms.toFixed(2)} ms.`:'ClickHouse query not run for this trace set.';
+const security=sponsors.semgrep;
+$('semgrepEvidence').textContent=security.status==='executed'?`Semgrep CE ${security.version} · ${security.before_matches} original matches → ${security.after_matches} active matches. ${security.confirmed_vulnerabilities} confirmed replay path traversal, reproduced and fixed. One targeted custom rule.`:'No cached Semgrep scan.';
+$('sponsorDetails').textContent=JSON.stringify(sponsors,null,2);
 $('banner').textContent=first.source==='fixture'?'ILLUSTRATIVE FIXTURES — no model was called. These numbers demonstrate the pipeline, not measured security or schema sensitivity.':'MEASURED REPLAY — representation sensitivity on this task/model config. Inspect raw calls; results do not generalize to other agents.';
 $('normalize').disabled=!groups.normalized||!groups.threat_loaded;
 const configs=[...new Map(traces.map(t=>[t.config_hash,t])).values()];
-$('config').textContent=`Model: ${first.model}\nTemperature: ${first.temperature}\nSeed: ${first.seed===null?'not requested':first.seed}\nExpected trials/variant: ${first.trial_count}\nSource: ${first.source}\nBoundary enforced: ${first.config.enforce_boundary}\nTimestamp: ${first.started_at}\n\nConfig SHA-256 by variant:\n`+configs.map(t=>`${t.variant}\n${t.config_hash}`).join('\n\n');
+$('config').textContent=`Provider: ${first.provider}\nModel: ${first.model}\nTemperature: ${first.temperature}\nSeed: ${first.seed===null?'not requested':first.seed}\nExpected trials/variant: ${first.trial_count}\nSource: ${first.source}\nBoundary enforced: ${first.config.enforce_boundary}\nTimestamp: ${first.started_at}\n\nConfig SHA-256 by variant:\n`+configs.map(t=>`${t.variant}\n${t.config_hash}`).join('\n\n');
 $('task').textContent=`POLICY\n${first.config.policy}\n\nTASK\n${first.config.prompt}`;
 function render(){
  $('scores').replaceChildren();$('bars').replaceChildren();$('traces').replaceChildren();

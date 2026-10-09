@@ -226,3 +226,6 @@ measured-matrix/
 tests/browser-capture/
 .venv/
 .env
+
+akash-matrix/
+akash-confirmation/

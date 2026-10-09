@@ -14,4 +14,6 @@
 | M4 | Canonical schema rewrite; five cached normalized fixture trials; before/after button | Actual normalized model trials |
 | M5 | README, pitch, backup screen recording, export/freeze commands | Measured golden traces; run freeze.py after approved live matrix |
 
-The recorded/demo numbers are synthetic and prominently labeled. The live measurement blocker is missing OPENAI_API_KEY and no team-approved model specified. No live API calls were made. This is not yet the full measured definition of done.
+The recorded/demo numbers are synthetic and prominently labeled. The live measurement blocker is missing AKASHML_API_KEY (or OPENAI_API_KEY for non-sponsor inference) and no team-approved model specified. No live API calls were made. This is not yet the full measured definition of done.
+
+Sponsor integrations: actual embedded ClickHouse analytics and local Semgrep scan/fix evidence; AkashML SDK adapter implemented but no actual inference yet. See SPONSORS.md.
