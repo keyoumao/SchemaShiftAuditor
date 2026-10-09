@@ -6,6 +6,18 @@ Your agent-security score may partly measure how the tools were worded — not w
 
 **Current status:** working harness and offline demonstration; live API measurement has not been run. Bundled results are explicitly labeled synthetic fixtures, not empirical findings. `demo/golden/` has no measured traces. No robustness or hardening improvement is claimed.
 
+## FleetGuardian: representation ASR control room
+
+FleetGuardian now opens on the SchemaShift ASR audit. Semgrep appears as secondary **Harness source trust**, while runtime fleet activity is explicitly simulated. Normalize reveals recorded canonical trials; the kill-chain view explains recorded outcomes. Neither establishes an ASR reduction by itself. See [PITCH.md](PITCH.md) for the product distinction and prior-art scope.
+
+After the live matrix is graded, analyzed, and frozen by the measurement owner, publish it explicitly:
+
+```bash
+python export_fleet.py demo/golden --out ../FleetGuardian/web/public/schema-audit.json
+```
+
+The exporter revalidates traces and preserves fixture/live, partial-cohort, and execution-boundary distinctions. It does not run inference, change traces, or update sponsor evidence. Click **Reload evidence** in FleetGuardian; rebuild/redeploy if serving a static production bundle. Until a live cohort is published, the UI's bundled report remains labeled synthetic fixtures.
+
 ## Quick start (offline demonstration)
 
 Python 3.11+. Install dependencies while connected, then all replay commands and the HTML work offline:
@@ -75,6 +87,24 @@ No measured results yet. All four fixture groups use the same scripted outcomes,
 Start a 90-minute wall-clock timer when M2 begins, including API outages and analysis time. Precommit to one full matrix, then at most one identical confirmation matrix in a separate output directory. Do not change prompts or variants to chase a result. “Stable” means the sign of a nonzero descriptive delta is consistent across those two matrices; it is not a statistical significance claim. If no such delta appears by the deadline, stop calls, preserve results, and switch the existing UI to its kill-chain view. No live calls are needed during judging.
 
 ## Validation
+
+### FleetGuardian source scanner
+
+The companion FleetGuardian frontend can now run real on-demand source scans separately from the schema-representation audit. Install `requirements-sponsors.txt`, then start the loopback API from this repository:
+
+```bash
+python -m security.source_api --repo ../FleetGuardian --repo .
+```
+
+In FleetGuardian, run `npm install && npm run dev` from `web/`, open `http://localhost:5173/harnesses`, and choose **Register repository**. Only configured checkouts are offered. The API scans the current local working tree, including nonignored source edits; it does not clone repositories or switch branches. Use HTTPS GitHub `origin` URLs. Repeat `--repo PATH` to permit another checkout. Vite proxies the API to port 8765.
+
+`GET /api/source-repositories` lists allowed repo URLs and checked-out branches. `POST /api/source-scans` accepts `{"repo":"https://github.com/owner/repo","branch":"main"}` and returns frontend-compatible findings, a severity heuristic, timestamp, and scan provenance. Failed, timed-out, empty, or incomplete scans return errors rather than clean reports. Requests are bounded and only one scan runs at a time. The server is for local development; production requires authentication, persistent storage, and deployment hardening.
+
+Seven local Semgrep rules cover Python and JavaScript/TypeScript dynamic code, shell execution, unsafe deserialization, TLS verification, and raw HTML rendering. Findings require review; this is not comprehensive security, dependency, secret, or prompt-injection coverage. Source is never executed or uploaded, and raw source snippets are not returned. Reports record the base commit, working-source hash, rule hash, engine version, and analyzed file count. The browser keeps reports only until reload. GitHub webhooks and automatic fixes are not implemented.
+
+Run the scanner integration tests with `RUN_SEMGREP_TESTS=1 python -m unittest discover -s tests -p test_source_agent.py -v`. They exercise all seven real rules, clean rescans, source limits, symlink rejection, and API request boundaries. Existing sponsor before/after evidence remains a separate narrow reproduction and is not evidence of these new rules.
+
+### Audit harness
 
 ```bash
 python -m unittest discover -s tests -v

@@ -1,0 +1,75 @@
+rules:
+  - id: python-dynamic-code
+    languages: [python]
+    severity: ERROR
+    message: Dynamic code execution can give untrusted input the agent's privileges.
+    metadata:
+      category: Unsafe tool execution
+      cwe: CWE-95
+      remediation: Replace eval/exec with explicit operations and validate tool arguments against an allowlist.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+  - id: python-shell-execution
+    languages: [python]
+    severity: ERROR
+    message: Shell execution can turn untrusted tool arguments into operating-system commands.
+    metadata:
+      category: Unsafe tool execution
+      cwe: CWE-78
+      remediation: Use a fixed executable and an argument array with shell=False; validate every argument.
+    pattern-either:
+      - pattern: subprocess.$METHOD(..., shell=True, ...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+  - id: python-unsafe-deserialization
+    languages: [python]
+    severity: ERROR
+    message: Deserializing untrusted pickle data can execute arbitrary code.
+    metadata:
+      category: Unsafe tool execution
+      cwe: CWE-502
+      remediation: Use JSON with schema validation for untrusted data; only unpickle authenticated trusted artifacts.
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+  - id: python-disabled-tls
+    languages: [python]
+    severity: WARNING
+    message: TLS verification is disabled for an HTTP request.
+    metadata:
+      category: Data exfiltration
+      cwe: CWE-295
+      remediation: Enable certificate verification and configure the trusted CA bundle when necessary.
+    pattern: requests.$METHOD(..., verify=False, ...)
+  - id: javascript-dynamic-code
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Dynamic JavaScript execution can run untrusted input with application privileges.
+    metadata:
+      category: Unsafe tool execution
+      cwe: CWE-95
+      remediation: Replace dynamic evaluation with explicit operations and validated structured input.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: javascript-shell-execution
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Shell command execution requires review of all input reaching the command.
+    metadata:
+      category: Unsafe tool execution
+      cwe: CWE-78
+      remediation: Use execFile or spawn with a fixed executable, validated argument array, and shell disabled.
+    pattern-either:
+      - pattern: child_process.exec(...)
+      - pattern: child_process.execSync(...)
+  - id: react-raw-html
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Raw HTML rendering may expose the interface to script injection.
+    metadata:
+      category: Unsafe tool execution
+      cwe: CWE-79
+      remediation: Render plain text or sanitize HTML with an established sanitizer before rendering.
+    pattern: <$TAG ... dangerouslySetInnerHTML={$VALUE} ... />
