@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# SchemaShift project artifacts
+runs/
+replay-matrix/
+measured-matrix/
+tests/browser-capture/
+.venv/
+.env
