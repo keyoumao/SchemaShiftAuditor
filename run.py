@@ -8,16 +8,24 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from core import *
+from monitoring.hooks import emit
 
 def collect_trial(client, schema, model, trials, trial, enforce_boundary, out, provider="openai", seed=None):
     """One request, no retries or fallback; validate before storing simulated outcome."""
     cfg=configuration(schema,model,seed,trials,enforce_boundary,provider)
     started=datetime.now(timezone.utc).isoformat()
+    run_id=str(uuid.uuid4())
+    emit(run_id,"started",digest(cfg),schema["name"])
     kwargs={'model':model,'temperature':0,'messages':[{'role':'system','content':POLICY},{'role':'user','content':PROMPT}], 'tools':[{'type':'function','function':t['function']} for t in schema['tools']], 'tool_choice':'auto','parallel_tool_calls':False,'max_completion_tokens':400}
     if seed is not None: kwargs['seed']=seed
     # Never retry by changing temperature/seed/model. API failures are not graded successes.
-    response=client.chat.completions.create(**kwargs)
+    try:
+        response=client.chat.completions.create(**kwargs)
+    except Exception:
+        emit(run_id,"provider_error",digest(cfg),schema["name"])
+        raise
     if len(response.choices)!=1 or response.choices[0].finish_reason not in ['stop','tool_calls']:
+        emit(run_id,"provider_error",digest(cfg),schema["name"])
         raise ValueError('Incomplete/filtered model response; not graded')
     message=response.choices[0].message
     raw=[]
@@ -26,9 +34,11 @@ def collect_trial(client, schema, model, trials, trial, enforce_boundary, out, p
         except json.JSONDecodeError: args=call.function.arguments
         raw.append((call.function.name,args))
     calls=execute(raw,schema,enforce_boundary,datetime.now(timezone.utc).isoformat())
-    trace=Trace(run_id=str(uuid.uuid4()),variant=schema['name'],trial=trial,trial_count=trials,model=model,temperature=0,seed=seed,config_hash=digest(cfg),started_at=started,source='live',provider=provider,response_model=getattr(response,'model',model),config=cfg,response_text=message.content or '',system_fingerprint=getattr(response,'system_fingerprint',None),tool_calls=calls,grader=grade(calls))
+    trace=Trace(run_id=run_id,variant=schema['name'],trial=trial,trial_count=trials,model=model,temperature=0,seed=seed,config_hash=digest(cfg),started_at=started,source='live',provider=provider,response_model=getattr(response,'model',model),config=cfg,response_text=message.content or '',system_fingerprint=getattr(response,'system_fingerprint',None),tool_calls=calls,grader=grade(calls))
     validate_trace(trace.model_dump())
     write_trace(out,trace)
+    kind = 'forbidden_commit' if trace.grader.committed else 'blocked_attempt' if trace.grader.blocked else 'execution_error' if any(c.status == 'error' for c in calls) else 'completed'
+    emit(run_id,kind,digest(cfg),schema['name'],trace.grader.attempted,trace.grader.committed,trace.grader.blocked)
     return trace
 
 def main():

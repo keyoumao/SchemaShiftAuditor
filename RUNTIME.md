@@ -56,9 +56,14 @@ Required fields: `event_id`, `time`, `source` (`mock|observed`), `sourcetype` (`
 python integrations/guild_review.py --env-file .env --out runs/guild-setup
 # After asynchronous build validation, continue using the recorded IDs:
 python integrations/guild_review.py --env-file .env --out runs/guild-setup --resume
+
+# After the local monitor has events/incidents, start one advisory Guild session:
+.venv/bin/python integrations/guild_review.py --env-file .env \
+  --out runs/guild-monitor-review --review-monitor --db runs/monitor.sqlite3 \
+  --agent-state runs/guild-20261009/guild-agent.json
 ```
 
-Provisioning is not a completed Guild runtime trial. No Guild model session is started by this command; the first experiment remains exactly 40 OpenAI requests. Do not count configuration alone as meaningful sponsor runtime evidence. No credentials are exported to the frontend.
+Provisioning alone is not a completed Guild runtime trial. `--review-monitor` exports structured monitor metadata (no prompts/credentials), creates one private workspace chat session for `schemashift-evidence-reviewer`, and waits for the advisory reply. That session is a Guild inference trial of the reviewer, not an additional ASR evaluation and not automatic remediation. No credentials are exported to the frontend.
 
 ## Competitors and judging
 
@@ -75,3 +80,28 @@ These are descriptions on project submissions, not independently verified perfor
 Our strongest present evidence is implementation and reproducibility: 40 real trials, SQL/programmatic agreement, immutable snapshots, per-call budget accounting, and honest zero results. Autonomy is bounded batch automation; the demo's event source is mocked, not a live web telemetry feed. Semgrep and embedded ClickHouse have executed. Guild configuration and an OpenAI call do not establish a third sponsor integration; verify event eligibility and demonstrate a meaningful third integration before claiming that criterion. Akash deployment is deferred.
 
 Next experiment: preregister a broader attack set and benign utility controls, then repeat with adequate trials and paired conditions. Do not keep changing prompts until a dramatic bar appears. Production extension: authenticated telemetry ingestion and an explicit harness-contract adapter, followed by a deployed worker on Akash.
+
+## Persistent live security monitoring
+
+Start the separate loopback monitor with `.venv/bin/python -m monitoring.api --db runs/monitor.sqlite3`. FleetGuardian's `/monitor` page polls it every two seconds via the Vite proxy on port 8766. Events and derived incidents are committed atomically to SQLite/WAL; they survive restarts. A reused event ID deduplicates identical payloads and rejects conflicting payloads. The inbox shows the latest 100 incidents and the stream the latest 100 events; older run records remain available through the log endpoint. There is no automatic retention cleanup yet.
+
+Enable instrumentation for future live evaluations by setting `SCHEMASHIFT_MONITOR_DB` to the absolute path of that database before running `run.py --live ...` or `runtime_agent.py --live ...`. This does not authorize new model calls by itself. The existing frozen 40-call experiment remains unchanged. Live hooks record starts, provider errors, completed outcomes, blocked attempts, and forbidden simulated commits. A monitor-write failure is explicitly reported to stderr; the evaluation continues and its monitoring record must be treated as incomplete.
+
+Severity mapping: forbidden commit → critical; invalid tool execution or provider failure → high; blocked attempt → medium. These classifications are deterministic, not an LLM security judgment. Every event independently labels collection provenance (`live`, `replay`, `test`) and execution (`real`, `simulated`). The built-in records evaluator always uses simulated execution. Absence of incidents does not establish collector coverage or agent safety. This monitor observes instrumented agents only; it does not intercept arbitrary agents or enforce production policy.
+
+Only structured metadata is accepted: event/run IDs, agent label, outcome kind, provenance, execution mode, optional config hash/variant, and attempted/committed/blocked flags. Raw prompts, arguments, response bodies, and credentials are rejected as unknown fields, rather than saved as unrestricted logs. Use nonsensitive opaque identifiers. Timestamps displayed in the UI are server receipt times; replay ingestion does not reconstruct original event times. Saved model traces remain separate and are not sent to an external service.
+
+For another local agent, either use `monitoring.store.Store(...).append(event)` or POST JSON to `/api/monitor/events`. HTTP ingestion requires the server's `SCHEMASHIFT_MONITOR_TOKEN` as a Bearer token; with no token configured, HTTP writes are disabled. Do not embed the token in the frontend. Read-only endpoints are `/api/monitor/snapshot` and `/api/monitor/logs?run_id=...`. Host and Origin checks restrict browser access; the service binds only to 127.0.0.1. This is a local development service, not a publicly deployable authenticated multi-tenant API.
+
+Demo without new model calls:
+
+```bash
+.venv/bin/python -m monitoring.replay --traces demo/runtime-live/reference
+.venv/bin/python -m monitoring.replay --test-incident
+```
+
+The first command imports historical evidence marked REPLAY. The second writes one critical TEST incident without executing an attack. Leave `/monitor` open to see the new alert arrive; expand it to inspect metadata and open its saved run logs. Replaying the same traces does not duplicate them. A new test-incident command deliberately creates a new drill.
+
+Notifications are local-dashboard-only, as requested. No developer messages, Slack/email alerts, or Langfuse/LangSmith exports are enabled. Langfuse's [official alert documentation](https://langfuse.com/docs/observability/features/alerts) describes routing alert changes to configured Slack/webhook/GitHub Actions automations. That would be a later integration requiring a destination and explicit data-export configuration, not something this implementation already provides.
+
+To exercise the Guild reviewer against monitor state without inventing a webhook stack, use `--review-monitor` above. Preferred path: SQLite export → one chat session. Alternatives deferred: HTTP webhook triggers on Guild, continuous auto-review on every incident, or shipping raw traces into Guild.
