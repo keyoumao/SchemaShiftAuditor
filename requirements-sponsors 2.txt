@@ -1,0 +1,4 @@
+-r requirements.txt
+# Optional build-time sponsor tools; the rendered demo still needs no runtime.
+chdb==4.4.0
+semgrep==1.180.0

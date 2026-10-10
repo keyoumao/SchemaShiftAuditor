@@ -1,0 +1,20 @@
+rules:
+  - id: schemashift-untrusted-run-id-path
+    languages: [python]
+    mode: taint
+    message: A trace run_id flows into a filesystem write path. Cached traces may supply traversal or absolute paths; validate IDs and contain output paths before writing.
+    severity: ERROR
+    metadata:
+      cwe: 'CWE-22: Improper Limitation of a Pathname to a Restricted Directory'
+      category: security
+      confidence: HIGH
+    pattern-sources:
+      - pattern: $TRACE.run_id
+    pattern-sanitizers:
+      - pattern: safe_trace_path(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $PATH.write_text(...)
+              - pattern: $PATH.open(...)
+          - focus-metavariable: $PATH
