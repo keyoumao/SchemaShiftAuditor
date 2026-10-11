@@ -1,4 +1,9 @@
-"""Loopback-only persistent event API. Run: python -m monitoring.api --db runs/monitor.sqlite3"""
+"""Loopback-only persistent event API. Run: python -m monitoring.api --db runs/monitor.sqlite3
+
+Default bind is 127.0.0.1. For an nginx-sidecar / same-pod proxy, set
+SCHEMASHIFT_MONITOR_PROXY=1 so any browser Origin is accepted when Host is still
+the loopback address nginx uses. External ingestion still requires a Bearer token.
+"""
 import argparse
 import hmac
 import json
@@ -9,7 +14,9 @@ from urllib.parse import urlsplit, parse_qs
 from monitoring.store import Store
 
 
-def handler(store, port, token, origin='http://localhost:5173'):
+def handler(store, port, token, origins=None, proxy_mode=False):
+    allowed = set(origins or ['http://localhost:5173'])
+
     class Handler(BaseHTTPRequestHandler):
         def setup(self):
             super().setup()
@@ -29,7 +36,10 @@ def handler(store, port, token, origin='http://localhost:5173'):
             self.wfile.write(body)
 
         def trusted(self):
-            if self.headers.get('Host') not in {f'127.0.0.1:{port}', f'localhost:{port}'} or self.headers.get('Origin') not in {None, origin}:
+            host_ok = self.headers.get('Host') in {f'127.0.0.1:{port}', f'localhost:{port}'}
+            origin = self.headers.get('Origin')
+            origin_ok = origin in {None, *allowed} or (proxy_mode and host_ok and origin is not None)
+            if not host_ok or not origin_ok:
                 self.reply(403, {'error': 'Origin or host rejected'})
                 return False
             return True
@@ -73,10 +83,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--db', default='runs/monitor.sqlite3')
     parser.add_argument('--port', type=int, default=8766)
+    parser.add_argument('--bind', default=os.environ.get('SCHEMASHIFT_MONITOR_BIND', '127.0.0.1'))
     args = parser.parse_args()
     token = os.environ.get('SCHEMASHIFT_MONITOR_TOKEN', '')
-    server = ThreadingHTTPServer(('127.0.0.1', args.port), handler(Store(args.db), args.port, token))
-    print(f'Monitor http://127.0.0.1:{args.port}; external ingestion {"enabled" if token else "disabled (no collector token)"}; local notifications only.', flush=True)
+    origins = [o.strip() for o in os.environ.get('SCHEMASHIFT_MONITOR_ORIGIN', 'http://localhost:5173').split(',') if o.strip()]
+    proxy_mode = os.environ.get('SCHEMASHIFT_MONITOR_PROXY', '').lower() in {'1', 'true', 'yes'}
+    if args.bind not in {'127.0.0.1', 'localhost'} and not proxy_mode:
+        raise SystemExit('Refusing non-loopback bind without SCHEMASHIFT_MONITOR_PROXY=1')
+    server = ThreadingHTTPServer((args.bind, args.port), handler(Store(args.db), args.port, token, origins, proxy_mode))
+    print(f'Monitor http://{args.bind}:{args.port}; external ingestion {"enabled" if token else "disabled (no collector token)"}; proxy_mode={proxy_mode}; notifications local-dashboard only.', flush=True)
     server.serve_forever()
 
 if __name__ == '__main__': main()
